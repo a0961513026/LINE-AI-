@@ -1,0 +1,302 @@
+{
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "72ff0c60-cebd-4349-85b2-2603419f1418",
+        "options": {}
+      },
+      "id": "f72cb01e-f714-4e80-9714-41207275048d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        0
+      ],
+      "webhookId": "72ff0c60-cebd-4349-85b2-2603419f1418"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# 用戶訊息\n{{ $json.body.events[0].message.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# 角色\n你是一個記帳資料解析器。\n\n# 任務\n請分析使用者的文字，並只輸出純 JSON 格式（不要包含任何聊天文字或 Markdown 表格格式）：\n\n{\n  \"account\": \"帳戶名稱，例如：錢包、中國信託\",\n  \"item\": \"品項，例如：午餐、飲料\",\n  \"amount\": 數字金額,\n  \"type\": \"expense\"\n}\n\n如果是收入，type 請填 \"income\"；如果是支出，type 請填 \"expense\"。\n\n# 規定\n請照這個格式 日期:2026/10/16 帳戶:中國信託  請務必每筆都記錄到 可以慢但要正確\n\n【記帳分類與下拉選單嚴格對應規範】\n解析使用者訊息時，請嚴格遵守以下選項，切勿自行改變字詞或發明新選項：\n\n1. 「帳戶 (account)」只能從以下清單選擇（若未指定，預設為 [錢包]）：\n   [錢包, 現金, 華南銀行, 中國信託, 華南SnY, icash2.0, 信用卡, 零錢筒]\n\n2. 「類別 (category)」只能從以下清單選擇：\n   - 收入類別：\n     [薪資, 額外收入, 初始, 加碼金, 活用資金]\n   - 支出類別：\n     [固定支出, 電話費, 訂閱費用, 遊戲固定支出, 油錢, 餐費公司, 出門花費, 生活支出, 定期定額, 警急備用金, 廟地捐款, 旅遊費, 未來支出, 保健食品, 勞保健保, 福利金, 雜支]\n\n3. 特殊判斷對應語意：\n   - 當提到「薪水」、「發薪」、「工資」、「薪資」等詞彙時，類別 (category) 請務必精準輸出為：[薪資]\n   - 當提到吃飯、午餐、晚餐、買飲料等生活花費時，若無特殊註記，類別請優先歸類為：[生活支出] 或 [出門花費]\n                       \n"
+        }
+      },
+      "id": "4ce06dbb-5e8b-4e85-95b1-428a79aeadc7",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        64,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "e81f5f24-3d36-4daf-bb6f-ee4bab46e15b",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        208
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": " Bearer  YG3r0ZZ4+ITvzfKPVrZNFSEcbxyqPQ1PnWvXTYUixjrByvkELnZp4CyWwRDqh1sLWf4SAxOTR4zIwN8Vil/EohDGmP9nEWMzfiyGomN72qO7SjJSseff9wyTbNwCKPOrYYCQkqb0eOyo1F79vndnAgdB04t89/1O/w1cDnyilFU="
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"replyToken\": \"{{ $('Webhook').item.json.body.events[0].replyToken }}\",\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"✅ 記帳成功！\\n📅 日期：{{ $now.toFormat('yyyy/MM/dd') }}\\n💰 帳戶：{{ $json['帳戶'] }}\\n🏷️ 項目：{{ $json['摘要'] }}\\n💵 金額：{{ $json['支出金額'] || $json['收入金額'] }} 元\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "9ccaaffe-2c75-48f4-8a64-1506d2e05109",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        704,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1rnHcn2swPW6fj-WMBS2xtx6sgzeIo4hYzp72mhWd3rc",
+          "mode": "list",
+          "cachedResultName": "試用",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rnHcn2swPW6fj-WMBS2xtx6sgzeIo4hYzp72mhWd3rc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1057920207,
+          "mode": "list",
+          "cachedResultName": "明細",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rnHcn2swPW6fj-WMBS2xtx6sgzeIo4hYzp72mhWd3rc/edit#gid=1057920207"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "日期": "={{ $now.toFormat('yyyy/MM/dd') }}",
+            "摘要": "={{ $json.output?.[0]?.item || $json.output?.item || $json.item || '' }}",
+            "支出金額": "={{ ($json.output?.[0]?.type || $json.output?.type || $json.type) === 'expense' ? ($json.output?.[0]?.amount || $json.output?.amount || $json.amount) : '' }}",
+            "收入金額": "={{ ($json.output?.[0]?.type || $json.output?.type || $json.type) === 'income' ? ($json.output?.[0]?.amount || $json.output?.amount || $json.amount) : '' }}",
+            "類別": "={{ $json.output?.[0]?.category || $json.output?.category || $json.category || '' }}",
+            "帳戶": "={{ $json.output?.[0]?.account || $json.output?.account || $json.account || '' }}",
+            "備註": "={{ $json.output?.[0]?.note || $json.output?.note || $json.note || '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "日期",
+              "displayName": "日期",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "帳戶",
+              "displayName": "帳戶",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "類別",
+              "displayName": "類別",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "摘要",
+              "displayName": "摘要",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "收入金額",
+              "displayName": "收入金額",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "支出金額",
+              "displayName": "支出金額",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "備註",
+              "displayName": "備註",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "locationDefine": {
+            "values": {
+              "headerRow": 101
+            }
+          }
+        }
+      },
+      "id": "f77a97d6-1d78-43b0-9a44-befeea9d66d6",
+      "name": "Append row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        464,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qbcQgDRK1rafXEXR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"account\": \"錢包\",\n  \"category\": \"餐飲費用\",\n  \"item\": \"午餐\",\n  \"amount\": 60,\n  \"type\": \"expense\",\n  \"note\": \"今天吃午餐\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        208
+      ],
+      "id": "8069106f-85f5-4b01-8c12-83497ef330a5",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ae9fd632-2e20-4b21-b2d4-2617e36c33e5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fbc19f144018cc1c184c5e0da102c21eff9518261173a2fb3a66fd1d02910971"
+  },
+  "nodeGroups": [],
+  "id": "A3iNntmHOzzZcfXm",
+  "tags": []
+}
